@@ -1,5 +1,6 @@
 #include <stdio.h> 
 #include "Memory.h"
+#include <string.h>
 
 const int numberOfBlocks=256;   //how many blocks are in the memory
 const int fileNameLength =32;   //how long a files name can be
@@ -10,7 +11,7 @@ const int blockSize=256;        //size of the blocks in bytes
 const int blocksInAFile=8;      //max number of blocks occupied by a file
 const int blockIDLength=1;      //related to number of blocks, which specific block is indexed roundup(log(blockSize)/8)
 const int fileTypeSize=1;       //size of the definition of the file type in the header
-const int fileSizeLength=3;     //# of bytes to represent file size in bytes 2^11 =2048 extra bit used for spacing ease
+const int fileSizeLength=2;     //# of bytes to represent file size in bytes 2^11 =2048 extra bit used for spacing ease
 char *mem;                      //array of chars used as memory
 
 
@@ -29,7 +30,7 @@ Memory::Memory(char mem[]){ //if the user already has a memory allow them to cop
   this->mem=mem;
 }
 
-Memory::~Memory(){  //destructor of memory
+Memory::~Memory(){  //destructor of memory 
   delete this->mem;
 }
 
@@ -37,7 +38,7 @@ Memory::~Memory(){  //destructor of memory
 
 void Memory::createFile(char name[]){
 //check basic creation requirements
-  if (sizeof(name)>=fileNameLength){
+  if (strlen(name)>=fileNameLength){
     printf("name exceeds limits ensure name is less than %d\n",fileNameLength);
     return; //exit early, no allocation exit early, no allocation exit early, no allocation exit early, no allocation exit early, no allocation exit early, no allocation
   } else if(name[0] ==0x00){
@@ -91,14 +92,14 @@ void Memory::write( char name[], char data[]){
   char* writeLocation = new char(2);
   writeLocation[0]=0x00;//block location
   writeLocation[1]=0x00;//block offset
-  writeLocation = findWriteLocation(name, writeLocation);
+  writeLocation = findWriteLocation(name, writeLocation); //returns 2 bytes
   if(writeLocation[0] == 0x00 && writeLocation[1] == 0x00){ //null, values == errored out, don't write
   printf("error writing\n");
     return; //breaks condition, it would overwrite the bitmap
   }
 
-  for(int write =0; write< sizeof(data); write++){
-    mem[writeLocation[0]*256+writeLocation[1]]=data[write];
+  for(int write =0; write< strlen(data); write++){
+    mem[writeLocation[0]*256+writeLocation[1]]=data[write]; //write the data
     writeLocation[1]= char((int(writeLocation[1])+1)%blockSize);  //increment the block size and if it's at the end of the block w
     if(writeLocation[1]==0x00){
       writeLocation = findWriteLocation(name, writeLocation);
@@ -129,7 +130,7 @@ char* Memory::findWriteLocation(char name[],char returnable[] ){
       }
 
       if(nameMatch){
-        blockOffset= mem[bitMapOffset + (i*fileHeaderLength) + fileNameLength + fileTypeSize + blocksInAFile*blockIDLength +  fileSizeLength ]; ;
+        blockOffset= mem[bitMapOffset + (i*fileHeaderLength) + fileNameLength + fileTypeSize + blocksInAFile*blockIDLength +  fileSizeLength ]; 
         //load offset from  the file in question past the filename,type specifier,blocks,file size to get nextByte
         for(int blockCheck= blocksInAFile-1; blockCheck<=0; blockCheck--){  //find the last block used by the file
           //check through the files block used space in reverse order
@@ -179,7 +180,9 @@ char findEmptyBlock(){
         }  else { //if it isn't one, we have an empty block
         //we have the bit that isn't 1, now we need to convert its location to a block index, apply that to the next block index of this file and pass that and 
           tempBlockID= char(nextAvailableBlock*8+bit);
-          //set the temp block ID to  
+          //set the temp block ID   
+          mem[nextAvailableBlock] = mem[nextAvailableBlock] | (0x80>>bit);
+          //occupy the block in bitmap
           break;
         }
 

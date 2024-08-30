@@ -1,8 +1,8 @@
 CC=g++
 CXXFLAGS=-g -Wall -Wextra -O0 -pthread
-DEPS = Semaphore.h
-OBJ = babyyoda.o Semaphore.o 
-BIN = babyyoda 
+DEPS =   Memory.h
+OBJ = main.o Memory.o 
+BIN = main 
 
 %.o: %.cpp $(DEPS)
 	$(CC) $(CXXFLAGS) -c -o $@ $<
